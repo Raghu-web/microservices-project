@@ -1,0 +1,123 @@
+version: "3.8"
+
+services:
+
+  redis-cart:
+    image: redis:alpine
+    container_name: redis-cart
+    ports:
+      - "6379:6379"
+
+  emailservice:
+    image: raghuram0024/microservicesproject:emailservice
+    container_name: emailservice
+    environment:
+      PORT: "8080"
+      DISABLE_PROFILER: "1"
+    ports:
+      - "8080:8080"
+
+  productcatalogservice:
+    image: raghuram0024/microservicesproject:productcatalogservice
+    container_name: productcatalogservice
+    environment:
+      PORT: "3550"
+      DISABLE_PROFILER: "1"
+    ports:
+      - "3550:3550"
+
+  currencyservice:
+    image: raghuram0024/microservicesproject:currencyservice
+    container_name: currencyservice
+    environment:
+      PORT: "7000"
+      DISABLE_PROFILER: "1"
+    ports:
+      - "7000:7000"
+
+  cartservice:
+    image: raghuram0024/microservicesproject:cartservice
+    container_name: cartservice
+    environment:
+      REDIS_ADDR: "redis-cart:6379"
+    ports:
+      - "7070:7070"
+    depends_on:
+      - redis-cart
+
+  paymentservice:
+    image: raghuram0024/microservicesproject:paymentservice
+    container_name: paymentservice
+    environment:
+      PORT: "50051"
+      DISABLE_PROFILER: "1"
+    ports:
+      - "50051:50051"
+
+  shippingservice:
+    image: raghuram0024/microservicesproject:shippingservice
+    container_name: shippingservice
+    environment:
+      PORT: "50051"
+      DISABLE_PROFILER: "1"
+    ports:
+      - "50052:50051"
+
+  recommendationservice:
+    image: raghuram0024/microservicesproject:recommendationservice
+    container_name: recommendationservice
+    environment:
+      PORT: "8080"
+      PRODUCT_CATALOG_SERVICE_ADDR: "productcatalogservice:3550"
+      DISABLE_PROFILER: "1"
+    ports:
+      - "8081:8080"
+
+  checkoutservice:
+    image: raghuram0024/microservicesproject:checkoutservice
+    container_name: checkoutservice
+    environment:
+      PORT: "5050"
+      PRODUCT_CATALOG_SERVICE_ADDR: "productcatalogservice:3550"
+      SHIPPING_SERVICE_ADDR: "shippingservice:50051"
+      PAYMENT_SERVICE_ADDR: "paymentservice:50051"
+      EMAIL_SERVICE_ADDR: "emailservice:8080"
+      CURRENCY_SERVICE_ADDR: "currencyservice:7000"
+      CART_SERVICE_ADDR: "cartservice:7070"
+    ports:
+      - "5050:5050"
+
+  adservice:
+    image: raghuram0024/microservicesproject:adservice
+    container_name: adservice
+    environment:
+      PORT: "9555"
+    ports:
+      - "9555:9555"
+
+  frontend:
+    image: raghuram0024/microservicesproject:frontend
+    container_name: frontend
+    environment:
+      PORT: "8080"
+      PRODUCT_CATALOG_SERVICE_ADDR: "productcatalogservice:3550"
+      CURRENCY_SERVICE_ADDR: "currencyservice:7000"
+      CART_SERVICE_ADDR: "cartservice:7070"
+      RECOMMENDATION_SERVICE_ADDR: "recommendationservice:8080"
+      SHIPPING_SERVICE_ADDR: "shippingservice:50051"
+      CHECKOUT_SERVICE_ADDR: "checkoutservice:5050"
+      AD_SERVICE_ADDR: "adservice:9555"
+    ports:
+      - "80:8080"
+    depends_on:
+      - checkoutservice
+
+  loadgenerator:
+    image: raghuram0024/microservicesproject:loadgenerator
+    container_name: loadgenerator
+    environment:
+      FRONTEND_ADDR: "frontend:80"
+      USERS: "10"
+    depends_on:
+      - frontend
+
